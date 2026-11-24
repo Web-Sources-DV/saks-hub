@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0B3D91">
+  <meta name="description" content="Inventario SAKS: busca productos por EAN o SKU y genera fichas técnicas.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./assets/saks-icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <title>SAKS HUB · Inventario</title>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./" aria-label="SAKS HUB inicio"><img src="./assets/saks-logo.jpg" alt="SAKS"><span>HUB · INVENTARIO</span></a>
+    <div class="top-actions"><span id="save-state" class="save-state">Cargando inventario…</span><button class="button button-light" id="install-button" hidden>Instalar app</button></div>
+  </header>
+
+  <main class="page">
+    <section class="hero panel">
+      <div class="eyebrow">Inventario · Panamá · USD</div>
+      <h1>Busca un producto por EAN o SKU</h1>
+      <div class="search-row"><input id="search-input" autocomplete="off" inputmode="search" placeholder="Escanea o escribe código de barras" aria-label="Código EAN, SKU o producto"><button id="search-button" class="button">Buscar</button></div>
+      <div class="toolbar">
+        <button class="button button-outline" id="scan-button">Escanear con cámara</button>
+        <button class="button button-outline" id="new-button">Agregar producto</button>
+        <button class="button button-outline" id="csv-button">Exportar Excel</button>
+        <button class="button button-outline" id="backup-button">Respaldar inventario</button>
+        <button class="button button-outline" id="restore-button">Importar respaldo</button>
+        <button class="button button-outline" id="zip-button">Descargar fichas ZIP</button>
+        <input class="hidden" id="restore-file" type="file" accept="application/json,.json">
+      </div>
+      <div id="scanner" class="scanner hidden"><video id="camera" playsinline></video><button id="stop-scan" class="button button-light">Cerrar cámara</button></div>
+      <p id="message" class="message" role="status"></p>
+      <p class="privacy-note">Los cambios se guardan en este navegador y dispositivo. Este sitio y el catálogo inicial son públicos.</p>
+    </section>
+
+    <section id="product-panel" class="product-panel panel hidden" aria-live="polite"></section>
+    <section id="form-panel" class="panel hidden">
+      <div class="section-head"><div><div class="eyebrow">Catálogo SAKS</div><h2 id="form-heading">Producto nuevo</h2></div><button id="cancel-form" class="icon-button" aria-label="Cerrar formulario">×</button></div>
+      <form id="product-form" class="form-grid">
+        <input name="SKU" id="field-SKU" type="hidden">
+        <label>EAN<input name="EAN" id="field-EAN" inputmode="numeric"></label>
+        <label>Producto *<input name="Producto" id="field-Producto" required></label>
+        <label>Marca<input name="Marca" id="field-Marca"></label>
+        <label>Categoría<input name="Categoria" id="field-Categoria"></label>
+        <label>Precio USD<input name="Precio USD" id="field-Precio" type="number" min="0" step="0.01"></label>
+        <label>Stock<input name="Stock" id="field-Stock" type="number" min="0" step="1"></label>
+        <label>Potencia<input name="Potencia" id="field-Potencia" placeholder="Ej.: 1550 W"></label>
+        <label>Voltaje<input name="Voltaje" id="field-Voltaje" placeholder="Ej.: 110 V"></label>
+        <label>Capacidad<input name="Capacidad" id="field-Capacidad"></label>
+        <label>Material<input name="Material" id="field-Material"></label>
+        <label>Colores<input name="Colores" id="field-Colores"></label>
+        <label>Tamaños<input name="Tamaños" id="field-Tamaños"></label>
+        <label>Velocidad<input name="Velocidad" id="field-Velocidad"></label>
+        <label>Proveedor<input name="Proveedor" id="field-Proveedor"></label>
+        <label class="wide">Beneficios<textarea name="Beneficios" id="field-Beneficios" rows="3"></textarea></label>
+        <label class="wide">Descripción<textarea name="Descripcion" id="field-Descripcion" rows="4"></textarea></label>
+        <label class="wide">Modo de uso<textarea name="Modo de uso" id="field-Modo" rows="3"></textarea></label>
+        <label class="wide">Contenido del empaque<textarea name="Contenido del empaque" id="field-Empaque" rows="2"></textarea></label>
+        <label class="wide">Foto del producto<input id="field-Foto" type="file" accept="image/*" capture="environment"><small>La foto se comprime y se guarda en este dispositivo.</small></label>
+        <div class="form-actions wide"><button class="button" type="submit">Guardar producto</button><button class="button button-outline" type="button" id="cancel-form-bottom">Cancelar</button></div>
+      </form>
+    </section>
+
+    <section class="panel inventory-panel">
+      <div class="section-head inventory-head"><div><div class="eyebrow">Base local</div><h2>Inventario <span id="product-count" class="count"></span></h2></div><input id="inventory-filter" class="filter-input" placeholder="Filtrar por SKU, EAN o producto" aria-label="Filtrar inventario"></div>
+      <div class="table-wrap"><table><thead><tr><th>SKU</th><th>EAN</th><th>Producto</th><th>Marca</th><th>Precio USD</th><th>Stock</th></tr></thead><tbody id="inventory-body"></tbody></table></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" defer></script>
+  <script src="./app.js" defer></script>
+</body>
+</html>
+
