@@ -1,0 +1,15 @@
+{
+  "name": "SAKS HUB · Inventario",
+  "short_name": "SAKS HUB",
+  "description": "Busca productos y genera fichas técnicas SAKS.",
+  "lang": "es-PA",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f6fb",
+  "theme_color": "#0B3D91",
+  "icons": [
+    { "src": "./assets/saks-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
+
