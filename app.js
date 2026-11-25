@@ -77,15 +77,16 @@ function extractProductText(text) {
   const knownBrands = ['NINJA','OSTER','BLACK+DECKER','BLACK & DECKER','HAMILTON BEACH','IMUSA','SAKS','PHILIPS','TAURUS','WHIRLPOOL','SAMSUNG','LG','KITCHENAID','HISENSE','PANASONIC'];
   const brand = knownBrands.find(name => upper.includes(name)) || '';
   const ean = find(/\b(\d{8,14})\b/);
-  const model = find(/(?:modelo|model|mod\.)\s*[:#-]?\s*([\w-]+)/i);
-  const product = lines.find(line => line.length >= 5 && !/\d{8,14}/.test(line) && !/(\d+\s*(w|v|volt|hz|l\b|qt\b))/i.test(line)) || '';
+  const model = find(/(?:modelo|model|mod\.)\s*[:#-]?\s*([^\n|•]+)/i).replace(/\s+(?:color|colour)\s*[:#-]?.*$/i,'').trim();
+  const product = find(/(?:ficha técnica\s*[-:·•]?\s*)?((?:freidora|licuadora|cafetera|horno|aspiradora|air fryer|blender)[^\n|•]{3,60})/i) || lines.find(line => line.length >= 5 && !/^(saks|ficha|especificaciones|technical|uso y cuidados)/i.test(line) && !/\d{8,14}/.test(line) && !/(\d+\s*(w|v|volt|hz|l\b|qt\b))/i.test(line)) || '';
   const price = find(/(?:\$|USD\s*)(\d{1,5}(?:[.,]\d{2})?)/i);
   const capacity = find(/(?:capacidad|capacity)\s*[:\-]?\s*([\d.,]+\s*(?:l|litros?|qt|quarts?|ml|oz|gal(?:ones?)?))/i) || find(/\b([\d.,]+\s*(?:l|litros?|qt|quarts?|ml|oz|gal(?:ones?)?))\b/i);
   const power = find(/(?:potencia|power)\s*[:\-]?\s*([\d.,]+\s*(?:w|watts?))/i) || find(/\b([\d.,]+\s*(?:w|watts?))\b/i);
   const voltage = find(/(?:voltaje|voltage)\s*[:\-]?\s*([\d.,]+\s*v(?:olts?)?)/i) || find(/\b(110|120|127|220|230|240)\s*v\b/i);
   const color = find(/(?:color|colour)\s*[:\-]?\s*([\wáéíóúñ -]{2,24})/i);
   const section = label => find(new RegExp(`${label}\\s*[:\\-]?\\s*([^\\n]+)`, 'i'));
-  return {EAN:ean,Producto:model?`${brand?brand+' ':''}${model}`:product,Marca:brand,'Precio USD':price?price.replace(',','.'):'',Potencia:power,Voltaje:voltage,Capacidad:capacity,Colores:color,Descripcion:lines.join(' · '),Beneficios:section('beneficios?|benefits?'),'Modo de uso':section('modo de uso|instrucciones de uso|how to use'),Categoria:/freidora|air fryer|licuadora|blender/i.test(text)?'Electrodomésticos':''};
+  const name = model ? (brand && !model.toUpperCase().includes(brand) ? `${brand} ${model}` : model) : product;
+  return {EAN:ean,Producto:name,Marca:brand,'Precio USD':price?price.replace(',','.'):'',Potencia:power,Voltaje:voltage,Capacidad:capacity,Colores:color,Descripcion:lines.join(' · '),Beneficios:section('beneficios?|benefits?'),'Modo de uso':section('modo de uso|instrucciones de uso|how to use'),Categoria:/freidora|air fryer|licuadora|blender/i.test(text)?'Electrodomésticos':''};
 }
 
 async function readProductPhoto(file) {
