@@ -70,6 +70,35 @@ function compressImage(file) {
   });
 }
 
+function extractProductText(text) {
+  const lines = text.split(/\n+/).map(s => s.trim()).filter(s => s.length > 2);
+  const find = regex => text.match(regex)?.[1]?.trim() || '';
+  const upper = text.toUpperCase();
+  const knownBrands = ['NINJA','OSTER','BLACK+DECKER','BLACK & DECKER','HAMILTON BEACH','IMUSA','SAKS','PHILIPS','TAURUS','WHIRLPOOL','SAMSUNG','LG','KITCHENAID','HISENSE','PANASONIC'];
+  const brand = knownBrands.find(name => upper.includes(name)) || '';
+  const ean = find(/\b(\d{8,14})\b/);
+  const model = find(/(?:modelo|model|mod\.)\s*[:#-]?\s*([\w-]+)/i);
+  const product = lines.find(line => line.length >= 5 && !/\d{8,14}/.test(line) && !/(\d+\s*(w|v|volt|hz|l\b|qt\b))/i.test(line)) || '';
+  const price = find(/(?:\$|USD\s*)(\d{1,5}(?:[.,]\d{2})?)/i);
+  const capacity = find(/(?:capacidad|capacity)\s*[:\-]?\s*([\d.,]+\s*(?:l|litros?|qt|quarts?|ml|oz|gal(?:ones?)?))/i) || find(/\b([\d.,]+\s*(?:l|litros?|qt|quarts?|ml|oz|gal(?:ones?)?))\b/i);
+  const power = find(/(?:potencia|power)\s*[:\-]?\s*([\d.,]+\s*(?:w|watts?))/i) || find(/\b([\d.,]+\s*(?:w|watts?))\b/i);
+  const voltage = find(/(?:voltaje|voltage)\s*[:\-]?\s*([\d.,]+\s*v(?:olts?)?)/i) || find(/\b(110|120|127|220|230|240)\s*v\b/i);
+  const color = find(/(?:color|colour)\s*[:\-]?\s*([\wáéíóúñ -]{2,24})/i);
+  const section = label => find(new RegExp(`${label}\\s*[:\\-]?\\s*([^\\n]+)`, 'i'));
+  return {EAN:ean,Producto:model?`${brand?brand+' ':''}${model}`:product,Marca:brand,'Precio USD':price?price.replace(',','.'):'',Potencia:power,Voltaje:voltage,Capacidad:capacity,Colores:color,Descripcion:lines.join(' · '),Beneficios:section('beneficios?|benefits?'),'Modo de uso':section('modo de uso|instrucciones de uso|how to use'),Categoria:/freidora|air fryer|licuadora|blender/i.test(text)?'Electrodomésticos':''};
+}
+
+async function readProductPhoto(file) {
+  if (!window.Tesseract?.recognize) { toast('No está disponible la lectura automática. Revisa tu conexión a internet.'); return; }
+  const status=$('ocr-status'); status.textContent='Leyendo la foto…';
+  try {
+    const {data:{text}}=await Tesseract.recognize(file,'spa+eng');
+    const extracted=extractProductText(text);
+    for(const [key,value] of Object.entries(extracted)){const ids={'Precio USD':'Precio','Modo de uso':'Modo'};const field=$('field-'+(ids[key]||key));if(field&&value&&!field.value)field.value=value;}
+    status.textContent='Datos detectados. Revisa lo que la foto pudo leer; también se usará como imagen de la ficha.';toast('Información de la foto extraída.');
+  } catch { status.textContent='No se pudo leer la foto. Prueba con más luz y texto enfocado.'; }
+}
+
 async function saveProduct(event) {
   event.preventDefault();
   const data = Object.fromEntries(new FormData($('product-form')).entries());
@@ -103,19 +132,19 @@ function downloadBlob(blob,name) { const url=URL.createObjectURL(blob); const a=
 function pdfName(p) { return `${String(p.SKU||'SAKS').replace(/[^a-z0-9_-]/gi,'_')}-${String(p.Producto||'producto').replace(/[^a-z0-9_-]/gi,'_').slice(0,50)}.pdf`; }
 function makePDF(p) {
   if (!window.jspdf?.jsPDF) throw new Error('No cargó el generador PDF. Revisa la conexión a internet e inténtalo de nuevo.');
-  const doc = new window.jspdf.jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
-  const w=297,h=210,blue='#0B3D91',margin=13;
-  doc.setFillColor(11,61,145); doc.rect(0,0,w,28,'F'); doc.addImage(logoData,'JPEG',margin,4,20,20); doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.text('SAKS · FICHA TÉCNICA',39,12); doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.text(String(p.Categoria||'INVENTARIO').toUpperCase(),39,20);
-  let y=38; doc.setTextColor(26,39,58); doc.setFont('helvetica','bold'); doc.setFontSize(19); const title=doc.splitTextToSize(String(p.Producto||'Producto'),150); doc.text(title,margin,y); y+=title.length*8;
-  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.text(`SKU: ${p.SKU||'—'}    EAN: ${p.EAN||'Pendiente'}`,margin,y+2); doc.setTextColor(11,61,145); doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.text(money(p['Precio USD']),margin,y+13);
-  doc.setTextColor(30,43,60); doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.text(`Stock: ${p.Stock||0}    Marca: ${p.Marca||'—'}`,margin,y+21);
-  if (p.Foto) { try { doc.addImage(p.Foto,'JPEG',margin,75,82,75,undefined,'FAST'); } catch {} }
-  let sy=78; const specs=[['Potencia',p.Potencia],['Voltaje',p.Voltaje],['Capacidad',p.Capacidad],['Velocidad',p.Velocidad],['Material',p.Material],['Colores',p.Colores],['Tamaños',p['Tamaños']],['Categoría',p.Categoria]];
-  doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(11,61,145); doc.text('ESPECIFICACIONES',108,sy-5);
-  specs.filter(([,v])=>v).forEach(([label,value],i)=>{ const x=108+(i%2)*83, yy=sy+Math.floor(i/2)*15; doc.setDrawColor(219,228,240); doc.line(x,yy+4,x+78,yy+4); doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(90,105,125); doc.text(label.toUpperCase(),x,yy); doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(28,40,58); doc.text(doc.splitTextToSize(String(value),75).slice(0,1),x,yy+4); });
-  let blockY=156; const blocks=[['DESCRIPCIÓN',p.Descripcion],['BENEFICIOS',p.Beneficios],['MODO DE USO',p['Modo de uso']],['CONTENIDO DEL EMPAQUE',p['Contenido del empaque']]].filter(([,v])=>v);
-  blocks.forEach(([heading,value])=>{ if(blockY>193){doc.addPage();blockY=18;} doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(11,61,145);doc.text(heading,margin,blockY);blockY+=5;doc.setFont('helvetica','normal');doc.setTextColor(38,50,68);const lines=doc.splitTextToSize(String(value),w-margin*2);const shown=lines.slice(0,Math.max(1,Math.floor((198-blockY)/4)));doc.text(shown,margin,blockY);blockY+=shown.length*4+7;});
-  doc.setFontSize(7);doc.setTextColor(100,110,125);doc.text('SAKS · Panamá · Precios en USD',margin,h-6);
+  const doc = new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:[139.7,215.9]});
+  const w=139.7,h=215.9,margin=7;
+  doc.setFillColor(11,61,145);doc.rect(0,0,w,25,'F');doc.addImage(logoData,'JPEG',margin,3,26,19);doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(11);doc.text('FICHA TÉCNICA',38,11);doc.setFontSize(8);doc.text('SAKS · PANAMÁ',38,18);
+  doc.setTextColor(11,61,145);doc.setFont('helvetica','bold');doc.setFontSize(13);const title=doc.splitTextToSize(String(p.Producto||'Producto'),w-2*margin);doc.text(title.slice(0,2),w/2,33,{align:'center'});
+  const top=43+Math.min(title.length,2)*5;doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(70,83,103);doc.text(`SKU: ${p.SKU||'—'}  ·  EAN: ${p.EAN||'—'}`,w/2,top-3,{align:'center'});
+  const photoW=57,photoH=66,specX=70,specW=w-specX-margin;
+  doc.setFillColor(245,248,252);doc.roundedRect(margin,top,photoW,photoH,2,2,'F');if(p.Foto){try{doc.addImage(p.Foto,'JPEG',margin+2,top+2,photoW-4,photoH-4,undefined,'FAST');}catch{}}else{doc.setFontSize(8);doc.setTextColor(120,132,150);doc.text('Foto del producto',margin+photoW/2,top+photoH/2,{align:'center'});}
+  doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(11,61,145);doc.text('ESPECIFICACIONES TÉCNICAS',specX,top+4);
+  const specs=[['Marca',p.Marca],['Precio',money(p['Precio USD'])],['Potencia',p.Potencia],['Voltaje',p.Voltaje],['Capacidad',p.Capacidad],['Color',p.Colores],['Tamaño',p['Tamaños']],['Stock',p.Stock]].filter(([,v])=>v!==''&&v!=null);
+  let sy=top+10;specs.forEach(([label,value])=>{doc.setDrawColor(211,222,237);doc.line(specX,sy+5,w-margin,sy+5);doc.setFont('helvetica','bold');doc.setFontSize(6.5);doc.setTextColor(85,101,123);doc.text(String(label).toUpperCase(),specX,sy);doc.setFont('helvetica','normal');doc.setFontSize(7.5);doc.setTextColor(25,39,59);doc.text(doc.splitTextToSize(String(value),specW-1).slice(0,1),specX,sy+4);sy+=7;});
+  let y=top+photoH+7;
+  for(const [heading,value] of [['DESCRIPCIÓN',p.Descripcion],['BENEFICIOS',p.Beneficios],['USO Y CUIDADOS',p['Modo de uso']],['CONTENIDO DEL EMPAQUE',p['Contenido del empaque']]]){if(!value||y>h-14)continue;doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(11,61,145);doc.text(heading,margin,y);y+=4;doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(38,50,68);const lines=doc.splitTextToSize(String(value),w-2*margin).slice(0,Math.max(1,Math.floor((h-12-y)/3.4)));doc.text(lines,margin,y);y+=lines.length*3.4+4;}
+  doc.setFontSize(6);doc.setTextColor(100,110,125);doc.text('SAKS · Panamá · Precio en USD',margin,h-4);
   return doc;
 }
 async function getLogo() { if(logoData)return logoData; const response=await fetch('./assets/saks-logo.txt'); if(!response.ok)throw new Error('No se pudo cargar el logo SAKS.'); logoData=`data:image/jpeg;base64,${(await response.text()).trim()}`; $('saks-logo').src=logoData; return logoData; }
@@ -141,6 +170,7 @@ $('new-button').addEventListener('click',()=>openNew($('search-input').value.tri
 $('scan-button').addEventListener('click',startScan);$('stop-scan').addEventListener('click',stopScan);
 $('cancel-form').addEventListener('click',closeForm);$('cancel-form-bottom').addEventListener('click',closeForm);
 $('product-form').addEventListener('submit',saveProduct);
+$('field-Foto').addEventListener('change',event=>{const file=event.target.files[0];if(file)readProductPhoto(file);});
 $('inventory-filter').addEventListener('input',event=>renderInventory(event.target.value));
 $('csv-button').addEventListener('click',exportCSV);$('backup-button').addEventListener('click',backupJSON);
 $('restore-button').addEventListener('click',()=>$('restore-file').click());
@@ -155,4 +185,3 @@ $('install-button').addEventListener('click',async()=>{if(installPrompt){install
 if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 
 (async()=>{try{await getLogo();const result=await readProducts();if(Array.isArray(result))products=result;renderInventory();setSaved();}catch(error){setSaved('Error al cargar');tell('No se pudo cargar el inventario inicial. Recarga esta página.');console.error(error);}})();
-
