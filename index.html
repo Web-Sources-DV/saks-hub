@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#0B3D91">
-  <meta name="description" content="Inventario SAKS: busca productos por EAN o SKU y genera fichas técnicas.">
+  <meta name="description" content="Inventario SAKS: busca productos por SKU y genera fichas técnicas.">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/saks-icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
@@ -19,8 +19,8 @@
   <main class="page">
     <section class="hero panel">
       <div class="eyebrow">Inventario · Panamá · USD</div>
-      <h1>Busca un producto por EAN o SKU</h1>
-      <div class="search-row"><input id="search-input" autocomplete="off" inputmode="search" placeholder="Escanea o escribe código de barras" aria-label="Código EAN, SKU o producto"><button id="search-button" class="button">Buscar</button></div>
+      <h1>Busca un producto por SKU</h1>
+      <div class="search-row"><input id="search-input" autocomplete="off" inputmode="search" placeholder="Escanea o escribe el SKU interno" aria-label="SKU interno o producto"><button id="search-button" class="button">Buscar</button></div>
       <div class="toolbar">
         <button class="button button-outline" id="scan-button">Escanear con cámara</button>
         <button class="button button-outline" id="new-button">Agregar producto</button>
@@ -41,7 +41,6 @@
       <form id="product-form" class="form-grid">
         <label class="wide photo-import">Foto de etiqueta, caja o manual<input id="field-Foto" type="file" accept="image/*" capture="environment"><small id="ocr-status">Sube una foto clara y la app intentará completar los datos automáticamente.</small></label>
         <input name="SKU" id="field-SKU" type="hidden">
-        <label>EAN<input name="EAN" id="field-EAN" inputmode="numeric"></label>
         <label>Producto *<input name="Producto" id="field-Producto" required></label>
         <label>Marca<input name="Marca" id="field-Marca"></label>
         <label>Categoría<input name="Categoria" id="field-Categoria"></label>
@@ -64,8 +63,8 @@
     </section>
 
     <section class="panel inventory-panel">
-      <div class="section-head inventory-head"><div><div class="eyebrow">Base local</div><h2>Inventario <span id="product-count" class="count"></span></h2></div><input id="inventory-filter" class="filter-input" placeholder="Filtrar por SKU, EAN o producto" aria-label="Filtrar inventario"></div>
-      <div class="table-wrap"><table><thead><tr><th>SKU</th><th>EAN</th><th>Producto</th><th>Marca</th><th>Precio USD</th><th>Stock</th></tr></thead><tbody id="inventory-body"></tbody></table></div>
+      <div class="section-head inventory-head"><div><div class="eyebrow">Base local</div><h2>Inventario <span id="product-count" class="count"></span></h2></div><input id="inventory-filter" class="filter-input" placeholder="Filtrar por SKU o producto" aria-label="Filtrar inventario"></div>
+      <div class="table-wrap"><table><thead><tr><th>SKU</th><th>Producto</th><th>Marca</th><th>Precio USD</th><th>Stock</th></tr></thead><tbody id="inventory-body"></tbody></table></div>
     </section>
   </main>
 
