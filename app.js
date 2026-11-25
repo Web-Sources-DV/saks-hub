@@ -1,5 +1,5 @@
 const STORAGE_KEY = 'saks-hub-inventory-v1';
-const FIELDS = ['SKU','EAN','Producto','Marca','Categoria','Precio USD','Foto','Descripcion','Potencia','Voltaje','Capacidad','Material','Stock','Proveedor','Beneficios','Colores','Tamaños','Modo de uso','Velocidad','Contenido del empaque','Estado'];
+const FIELDS = ['SKU','Producto','Marca','Categoria','Precio USD','Foto','Descripcion','Potencia','Voltaje','Capacidad','Material','Stock','Proveedor','Beneficios','Colores','Tamaños','Modo de uso','Velocidad','Contenido del empaque','Estado'];
 const $ = id => document.getElementById(id);
 let products = [];
 let editing = false;
@@ -18,40 +18,40 @@ function bySKU(sku) { return products.find(p => String(p.SKU) === String(sku)); 
 function readProducts() {
   let local;
   try { local = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch { local = null; }
-  if (Array.isArray(local)) return local;
+  if (Array.isArray(local)) { products = local.map(({EAN,...product}) => product); if(local.some(p=>'EAN'in p)) localStorage.setItem(STORAGE_KEY,JSON.stringify(products)); return products; }
   return fetch('./products.json', {cache:'no-store'}).then(r => { if (!r.ok) throw new Error('No se pudo cargar products.json'); return r.json(); }).then(seed => { products = seed; saveLocal(); return products; });
 }
 
 function renderInventory(filter='') {
   const query = filter.trim().toLocaleLowerCase('es');
-  const shown = products.filter(p => !query || [p.SKU,p.EAN,p.Producto,p.Marca,p.Categoria].some(v => String(v||'').toLocaleLowerCase('es').includes(query)));
+  const shown = products.filter(p => !query || [p.SKU,p.Producto,p.Marca,p.Categoria].some(v => String(v||'').toLocaleLowerCase('es').includes(query)));
   $('product-count').textContent = `${shown.length} de ${products.length}`;
-  $('inventory-body').innerHTML = shown.map(p => `<tr data-sku="${safe(p.SKU)}"><td>${safe(p.SKU)}</td><td>${safe(p.EAN || '—')}</td><td>${safe(p.Producto)}</td><td>${safe(p.Marca || '—')}</td><td>${money(p['Precio USD'])}</td><td>${safe(p.Stock || 0)}</td></tr>`).join('') || '<tr><td colspan="6">No hay productos para mostrar.</td></tr>';
+  $('inventory-body').innerHTML = shown.map(p => `<tr data-sku="${safe(p.SKU)}"><td>${safe(p.SKU)}</td><td>${safe(p.Producto)}</td><td>${safe(p.Marca || '—')}</td><td>${money(p['Precio USD'])}</td><td>${safe(p.Stock || 0)}</td></tr>`).join('') || '<tr><td colspan="5">No hay productos para mostrar.</td></tr>';
 }
 
 function findProduct() {
   const raw = $('search-input').value.trim();
-  const digits = raw.replace(/\D/g, '');
-  const found = products.find(p => p.EAN && String(p.EAN).replace(/\D/g,'') === digits) || products.find(p => String(p.SKU).toLowerCase() === raw.toLowerCase()) || products.find(p => String(p.Producto || '').toLowerCase().includes(raw.toLowerCase()));
+  const found = products.find(p => String(p.SKU).toLowerCase() === raw.toLowerCase()) || products.find(p => String(p.Producto || '').toLowerCase().includes(raw.toLowerCase()));
   if (found) { closeForm(); showProduct(found); tell('Producto encontrado.'); return; }
-  if (/^\d{8,14}$/.test(digits)) { $('search-input').value = digits; openNew(digits); tell('Producto no encontrado. Completa sus datos para agregarlo.'); }
-  else { $('product-panel').classList.add('hidden'); tell(raw ? 'No se encontró el producto. Busca por EAN, SKU o nombre.' : 'Escribe un código o nombre para buscar.'); }
+  if (/^[a-z\d_-]{3,32}$/i.test(raw)) { openNew(raw); tell('SKU no encontrado. Agrega la información del producto.'); }
+  else { $('product-panel').classList.add('hidden'); tell(raw ? 'No se encontró. Busca por SKU o nombre.' : 'Escribe un SKU o nombre para buscar.'); }
 }
 
 function showProduct(p) {
   const photo = p.Foto ? `<img class="product-image" src="${safe(p.Foto)}" alt="${safe(p.Producto)}">` : '<div class="placeholder">Agrega una foto del producto desde Editar</div>';
   const specs = [['Categoría',p.Categoria],['Marca',p.Marca],['Capacidad',p.Capacidad],['Potencia',p.Potencia],['Voltaje',p.Voltaje],['Velocidad',p.Velocidad],['Material',p.Material],['Colores',p.Colores],['Tamaños',p['Tamaños']],['Proveedor',p.Proveedor],['Stock',p.Stock]];
   const details = [['Descripción',p.Descripcion],['Beneficios',p.Beneficios],['Modo de uso',p['Modo de uso']],['Contenido del empaque',p['Contenido del empaque']]];
-  $('product-panel').innerHTML = `<div class="product-top"><div>${photo}</div><div><div class="sku-line"><span class="pill">SKU ${safe(p.SKU)}</span><span class="pill">EAN ${safe(p.EAN || 'Pendiente')}</span></div><h2 class="product-title">${safe(p.Producto || 'Producto sin nombre')}</h2><div class="price">${money(p['Precio USD'])}</div><div class="stock">Stock disponible: <b>${safe(p.Stock || 0)}</b></div><div class="toolbar actions"><button class="button" data-action="pdf" data-sku="${safe(p.SKU)}">Descargar ficha PDF</button><button class="button button-outline" data-action="edit" data-sku="${safe(p.SKU)}">Editar ficha</button></div></div></div><div class="specs">${specs.map(([label,value])=>`<div class="spec"><b>${safe(label)}</b>${safe(value || '—')}</div>`).join('')}</div>${details.map(([label,value])=>`<div class="detail-block"><b>${safe(label)}</b>${safe(value || 'Pendiente de completar')}</div>`).join('')}`;
+  $('product-panel').innerHTML = `<div class="product-top"><div>${photo}</div><div><div class="sku-line"><span class="pill">SKU ${safe(p.SKU)}</span></div><h2 class="product-title">${safe(p.Producto || 'Producto sin nombre')}</h2><div class="price">${money(p['Precio USD'])}</div><div class="stock">Stock disponible: <b>${safe(p.Stock || 0)}</b></div><div class="toolbar actions"><button class="button" data-action="pdf" data-sku="${safe(p.SKU)}">Descargar ficha PDF</button><button class="button button-outline" data-action="edit" data-sku="${safe(p.SKU)}">Editar ficha</button></div></div></div><div class="specs">${specs.map(([label,value])=>`<div class="spec"><b>${safe(label)}</b>${safe(value || '—')}</div>`).join('')}</div>${details.map(([label,value])=>`<div class="detail-block"><b>${safe(label)}</b>${safe(value || 'Pendiente de completar')}</div>`).join('')}`;
   $('product-panel').classList.remove('hidden'); $('product-panel').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-function openNew(ean='') {
-  editing = false; $('product-form').reset(); $('form-heading').textContent = 'Producto nuevo'; $('field-SKU').value = ''; $('field-EAN').value = ean; $('field-Stock').value = '0'; $('form-panel').classList.remove('hidden'); $('product-panel').classList.add('hidden'); $('form-panel').scrollIntoView({behavior:'smooth',block:'start'});
+function openNew(sku='') {
+  editing = false; $('product-form').reset(); $('form-heading').textContent = 'Producto nuevo'; $('field-SKU').value = sku; $('field-SKU').dataset.original = ''; $('field-Stock').value = '0'; $('ocr-status').textContent='Sube una foto clara y la app intentará completar los datos automáticamente.'; $('form-panel').classList.remove('hidden'); $('product-panel').classList.add('hidden'); $('form-panel').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function openEdit(sku) {
   const p = bySKU(sku); if (!p) return;
   editing = true; $('product-form').reset(); $('form-heading').textContent = `Editar producto · ${p.SKU}`;
+  $('field-SKU').dataset.original = p.SKU;
   const ids = {'Precio USD':'Precio','Modo de uso':'Modo','Contenido del empaque':'Empaque'};
   FIELDS.forEach(key => { const field = $('field-' + (ids[key] || key)); if (field && field.type !== 'file') field.value = p[key] ?? ''; });
   $('form-panel').classList.remove('hidden'); $('product-panel').classList.add('hidden'); $('form-panel').scrollIntoView({behavior:'smooth',block:'start'});
@@ -74,41 +74,45 @@ function extractProductText(text) {
   const lines = text.split(/\n+/).map(s => s.trim()).filter(s => s.length > 2);
   const find = regex => text.match(regex)?.[1]?.trim() || '';
   const upper = text.toUpperCase();
-  const knownBrands = ['NINJA','OSTER','BLACK+DECKER','BLACK & DECKER','HAMILTON BEACH','IMUSA','SAKS','PHILIPS','TAURUS','WHIRLPOOL','SAMSUNG','LG','KITCHENAID','HISENSE','PANASONIC'];
-  const brand = knownBrands.find(name => upper.includes(name)) || '';
-  const ean = find(/\b(\d{8,14})\b/);
+  const knownBrands = ['NINJA','OSTER','BLACK+DECKER','BLACK & DECKER','HAMILTON BEACH','IMUSA','SAKS','PHILIPS','TAURUS','WHIRLPOOL','SAMSUNG','KITCHENAID','HISENSE','PANASONIC','JBL','SONY','BOSE','BEATS','SKULLCANDY','LOGITECH','MOTOROLA'];
+  const brand = knownBrands.find(name => new RegExp(`(^|[^A-Z0-9])${name.replace(/[+&]/g,'\\$&')}([^A-Z0-9]|$)`).test(upper)) || '';
+  const sku = find(/(?:sku|c[oó]digo interno)\s*[:#-]?\s*([a-z0-9_-]{3,32})/i);
   const model = find(/(?:modelo|model|mod\.)\s*[:#-]?\s*([^\n|•]+)/i).replace(/\s+(?:color|colour)\s*[:#-]?.*$/i,'').trim();
-  const product = find(/(?:ficha técnica\s*[-:·•]?\s*)?((?:freidora|licuadora|cafetera|horno|aspiradora|air fryer|blender)[^\n|•]{3,60})/i) || lines.find(line => line.length >= 5 && !/^(saks|ficha|especificaciones|technical|uso y cuidados)/i.test(line) && !/\d{8,14}/.test(line) && !/(\d+\s*(w|v|volt|hz|l\b|qt\b))/i.test(line)) || '';
-  const price = find(/(?:\$|USD\s*)(\d{1,5}(?:[.,]\d{2})?)/i);
+  const product = find(/(?:producto|product)\s*[:#-]?\s*([^\n|•]{3,60})/i) || lines.find(line => /freidora|licuadora|cafetera|horno|aspiradora|aud[ií]fonos|headphones?|earbuds?|air fryer|blender|speaker|bocina/i.test(line)) || '';
+  const price = find(/(?:precio|price)\s*[:#-]?\s*(?:USD\s*)?\$?\s*(\d{1,5}(?:[.,]\d{2})?)/i);
   const capacity = find(/(?:capacidad|capacity)\s*[:\-]?\s*([\d.,]+\s*(?:l|litros?|qt|quarts?|ml|oz|gal(?:ones?)?))/i) || find(/\b([\d.,]+\s*(?:l|litros?|qt|quarts?|ml|oz|gal(?:ones?)?))\b/i);
   const power = find(/(?:potencia|power)\s*[:\-]?\s*([\d.,]+\s*(?:w|watts?))/i) || find(/\b([\d.,]+\s*(?:w|watts?))\b/i);
   const voltage = find(/(?:voltaje|voltage)\s*[:\-]?\s*([\d.,]+\s*v(?:olts?)?)/i) || find(/\b(110|120|127|220|230|240)\s*v\b/i);
   const color = find(/(?:color|colour)\s*[:\-]?\s*([\wáéíóúñ -]{2,24})/i);
   const section = label => find(new RegExp(`${label}\\s*[:\\-]?\\s*([^\\n]+)`, 'i'));
   const name = model ? (brand && !model.toUpperCase().includes(brand) ? `${brand} ${model}` : model) : product;
-  return {EAN:ean,Producto:name,Marca:brand,'Precio USD':price?price.replace(',','.'):'',Potencia:power,Voltaje:voltage,Capacidad:capacity,Colores:color,Descripcion:lines.join(' · '),Beneficios:section('beneficios?|benefits?'),'Modo de uso':section('modo de uso|instrucciones de uso|how to use'),Categoria:/freidora|air fryer|licuadora|blender/i.test(text)?'Electrodomésticos':''};
+  return {SKU:sku,Producto:name,Marca:brand,'Precio USD':price?price.replace(',','.'):'',Potencia:power,Voltaje:voltage,Capacidad:capacity,Colores:color,Descripcion:section('descripci[oó]n|description'),Beneficios:section('beneficios?|benefits?'),'Modo de uso':section('modo de uso|instrucciones de uso|how to use'),Categoria:/freidora|air fryer|licuadora|blender/i.test(text)?'Electrodomésticos':''};
 }
 
 async function readProductPhoto(file) {
   if (!window.Tesseract?.recognize) { toast('No está disponible la lectura automática. Revisa tu conexión a internet.'); return; }
   const status=$('ocr-status'); status.textContent='Leyendo la foto…';
   try {
-    const {data:{text}}=await Tesseract.recognize(file,'spa+eng');
-    const extracted=extractProductText(text);
+    const {data}=await Tesseract.recognize(file,'spa+eng');
+    const trustedText=(data.lines||[]).filter(line=>line.confidence>=78).map(line=>line.text).join('\n');
+    if(!trustedText){status.textContent='No pude leer con suficiente certeza. Prueba otra foto más nítida y con mejor luz.';toast('No llené datos dudosos.');return;}
+    const extracted=extractProductText(trustedText);
     for(const [key,value] of Object.entries(extracted)){const ids={'Precio USD':'Precio','Modo de uso':'Modo'};const field=$('field-'+(ids[key]||key));if(field&&value&&!field.value)field.value=value;}
-    status.textContent='Datos detectados. Revisa lo que la foto pudo leer; también se usará como imagen de la ficha.';toast('Información de la foto extraída.');
+    status.textContent='Solo completé datos legibles. Los campos que no pude identificar quedaron vacíos.';toast('Se omitieron datos con baja confianza.');
   } catch { status.textContent='No se pudo leer la foto. Prueba con más luz y texto enfocado.'; }
 }
 
 async function saveProduct(event) {
   event.preventDefault();
   const data = Object.fromEntries(new FormData($('product-form')).entries());
+  data.SKU = editing ? $('field-SKU').dataset.original : (String(data.SKU || '').trim() || nextSKU());
+  if (!editing && products.some(p=>String(p.SKU).toLowerCase()===data.SKU.toLowerCase())) { toast('Ese SKU ya existe. Busca el producto o usa otro código interno.'); return; }
   data['Precio USD'] = Number(data['Precio USD'] || 0); data.Stock = Math.max(0, Number(data.Stock || 0));
   const file = $('field-Foto').files[0];
   if (file) { try { data.Foto = await compressImage(file); } catch { toast('No se pudo procesar la foto.'); return; } }
   else if (editing) data.Foto = bySKU(data.SKU)?.Foto || '';
   else data.Foto = '';
-  if (!editing) { data.SKU = nextSKU(); data.Estado = 'Producto nuevo'; products.push(data); }
+  if (!editing) { data.Estado = 'Producto nuevo'; products.push(data); }
   else { const index = products.findIndex(p => String(p.SKU) === String(data.SKU)); data.Estado = products[index]?.Estado || 'En catálogo'; products[index] = {...products[index], ...data}; }
   try { saveLocal(); closeForm(); showProduct(bySKU(data.SKU)); tell(`Ficha ${data.SKU} guardada en este dispositivo.`); toast('Producto guardado.'); await downloadPDF(data.SKU); }
   catch (error) { toast('No se pudo guardar en este dispositivo. Exporta un respaldo y libera espacio.'); }
@@ -137,7 +141,7 @@ function makePDF(p) {
   const w=139.7,h=215.9,margin=7;
   doc.setFillColor(11,61,145);doc.rect(0,0,w,25,'F');doc.addImage(logoData,'JPEG',margin,3,26,19);doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(11);doc.text('FICHA TÉCNICA',38,11);doc.setFontSize(8);doc.text('SAKS · PANAMÁ',38,18);
   doc.setTextColor(11,61,145);doc.setFont('helvetica','bold');doc.setFontSize(13);const title=doc.splitTextToSize(String(p.Producto||'Producto'),w-2*margin);doc.text(title.slice(0,2),w/2,33,{align:'center'});
-  const top=43+Math.min(title.length,2)*5;doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(70,83,103);doc.text(`SKU: ${p.SKU||'—'}  ·  EAN: ${p.EAN||'—'}`,w/2,top-3,{align:'center'});
+  const top=43+Math.min(title.length,2)*5;doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(70,83,103);doc.text(`SKU: ${p.SKU||'—'}`,w/2,top-3,{align:'center'});
   const photoW=57,photoH=66,specX=70,specW=w-specX-margin;
   doc.setFillColor(245,248,252);doc.roundedRect(margin,top,photoW,photoH,2,2,'F');if(p.Foto){try{doc.addImage(p.Foto,'JPEG',margin+2,top+2,photoW-4,photoH-4,undefined,'FAST');}catch{}}else{doc.setFontSize(8);doc.setTextColor(120,132,150);doc.text('Foto del producto',margin+photoW/2,top+photoH/2,{align:'center'});}
   doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(11,61,145);doc.text('ESPECIFICACIONES TÉCNICAS',specX,top+4);
@@ -159,15 +163,15 @@ async function downloadZIP() {
 }
 
 async function startScan() {
-  if(!navigator.mediaDevices?.getUserMedia||!('BarcodeDetector'in window)){toast('Este navegador no admite escaneo en vivo. Escribe el EAN o usa un lector de códigos.');return;}
-  try { const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e']});stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});$('camera').srcObject=stream;$('scanner').classList.remove('hidden');await $('camera').play();scanTimer=setInterval(async()=>{if(!stream)return;try{const codes=await detector.detect($('camera'));if(codes.length){$('search-input').value=codes[0].rawValue;stopScan();findProduct();}}catch{}},350); }
+  if(!navigator.mediaDevices?.getUserMedia||!('BarcodeDetector'in window)){toast('Este navegador no admite escaneo en vivo. Escribe el SKU o usa un lector de códigos.');return;}
+  try { const supported=await BarcodeDetector.getSupportedFormats();const formats=['code_128','code_39','qr_code','data_matrix','codabar','itf'].filter(f=>supported.includes(f));if(!formats.length)throw new Error('No admite formatos de SKU');const detector=new BarcodeDetector({formats});stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});$('camera').srcObject=stream;$('scanner').classList.remove('hidden');await $('camera').play();scanTimer=setInterval(async()=>{if(!stream)return;try{const codes=await detector.detect($('camera'));if(codes.length){$('search-input').value=codes[0].rawValue;stopScan();findProduct();}}catch{}},350); }
   catch { stopScan();toast('No se pudo abrir la cámara. Permite el acceso a la cámara en el navegador.'); }
 }
 function stopScan(){if(scanTimer)clearInterval(scanTimer);scanTimer=null;if(stream)stream.getTracks().forEach(track=>track.stop());stream=null;$('scanner').classList.add('hidden');}
 
 $('search-button').addEventListener('click',findProduct);
 $('search-input').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();findProduct();}});
-$('new-button').addEventListener('click',()=>openNew($('search-input').value.trim()));
+$('new-button').addEventListener('click',()=>openNew());
 $('scan-button').addEventListener('click',startScan);$('stop-scan').addEventListener('click',stopScan);
 $('cancel-form').addEventListener('click',closeForm);$('cancel-form-bottom').addEventListener('click',closeForm);
 $('product-form').addEventListener('submit',saveProduct);
