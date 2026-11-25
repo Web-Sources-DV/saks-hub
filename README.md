@@ -35,4 +35,15 @@ GitHub Pages sirve este catálogo públicamente. Cualquier persona puede leer lo
 Para que una edición aparezca en todos los dispositivos, actualiza `SourceProducts.gs`, ejecuta `node tools/build-catalog.cjs` y publica los cambios de `products.json` y, si hace falta, del logo. Las ediciones hechas desde la app son locales hasta que se exporten e incorporen al repositorio.
 
 Los campos técnicos, beneficios, colores, tamaños, imágenes y modo de uso que no estaban en el Excel quedan vacíos para completar. La información comercial no se inventa.
+# SAKS HUB
 
+App estática para GitHub Pages. El catálogo inicial se carga desde `products.json`; los cambios se guardan localmente en cada navegador y dispositivo.
+
+## Fichas
+
+- La ficha PDF usa media hoja carta vertical: 13.97 × 21.59 cm (5.5 × 8.5 pulgadas).
+- Al agregar un producto, sube una foto legible de la etiqueta, caja o manual. OCR en el navegador intenta extraer EAN, nombre/modelo, marca, precio, potencia, voltaje, capacidad y otros textos.
+- La foto se conserva como imagen del producto. Revisa los datos detectados, ya que una foto borrosa puede producir errores.
+- La lectura OCR requiere conexión a internet la primera vez para cargar Tesseract.js y sus datos de idioma.
+
+Los beneficios y el modo de uso solo se completan automáticamente si aparecen escritos en la imagen. No se inventa información que no esté visible.
