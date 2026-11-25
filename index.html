@@ -39,6 +39,7 @@
     <section id="form-panel" class="panel hidden">
       <div class="section-head"><div><div class="eyebrow">Catálogo SAKS</div><h2 id="form-heading">Producto nuevo</h2></div><button id="cancel-form" class="icon-button" aria-label="Cerrar formulario">×</button></div>
       <form id="product-form" class="form-grid">
+        <label class="wide photo-import">Foto de etiqueta, caja o manual<input id="field-Foto" type="file" accept="image/*" capture="environment"><small id="ocr-status">Sube una foto clara y la app intentará completar los datos automáticamente.</small></label>
         <input name="SKU" id="field-SKU" type="hidden">
         <label>EAN<input name="EAN" id="field-EAN" inputmode="numeric"></label>
         <label>Producto *<input name="Producto" id="field-Producto" required></label>
@@ -58,8 +59,7 @@
         <label class="wide">Descripción<textarea name="Descripcion" id="field-Descripcion" rows="4"></textarea></label>
         <label class="wide">Modo de uso<textarea name="Modo de uso" id="field-Modo" rows="3"></textarea></label>
         <label class="wide">Contenido del empaque<textarea name="Contenido del empaque" id="field-Empaque" rows="2"></textarea></label>
-        <label class="wide">Foto del producto<input id="field-Foto" type="file" accept="image/*" capture="environment"><small>La foto se comprime y se guarda en este dispositivo.</small></label>
-        <div class="form-actions wide"><button class="button" type="submit">Guardar producto</button><button class="button button-outline" type="button" id="cancel-form-bottom">Cancelar</button></div>
+        <div class="form-actions wide"><button class="button" type="submit">Guardar y generar ficha</button><button class="button button-outline" type="button" id="cancel-form-bottom">Cancelar</button></div>
       </form>
     </section>
 
@@ -72,7 +72,7 @@
   <div id="toast" class="toast" role="status"></div>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
   <script src="./app.js" defer></script>
 </body>
 </html>
-
