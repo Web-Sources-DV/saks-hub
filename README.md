@@ -1,49 +1,25 @@
 # SAKS HUB
 
-Aplicación web estática para buscar el inventario SAKS por EAN, SKU o nombre y generar fichas técnicas. Se publica en GitHub Pages; no usa Google Sheets ni requiere servidor.
+App estática para GitHub Pages. El catálogo inicial está en `products.json`; los cambios de la app se guardan localmente en cada navegador y dispositivo.
 
-## Publicación
+Aplicación publicada: https://web-sources-dv.github.io/saks-hub/
 
-El sitio se sirve desde la raíz de `main`. El archivo de entrada debe llamarse `index.html` en minúsculas. Cuando Pages termine de publicar, la app queda en:
+## Inventario y códigos
 
-<https://web-sources-dv.github.io/saks-hub/>
+`products.json` incluye 113 productos: cinco productos SAKS de ejemplo y 108 registros del comparativo de inventarios. El identificador de cada producto es el SKU interno. La app busca, muestra, escanea y exporta por SKU; no usa EAN. Al dar de alta un producto, conserva el SKU interno que se escanee o detecte en una etiqueta; si no hay uno, genera un código `SAKS-00X`.
 
-En GitHub: **Settings → Pages → Build and deployment → Deploy from a branch → `main` → `/ (root)`**.
+Para regenerar el catálogo desde las fuentes incluidas, ejecuta `node tools/build-catalog.cjs`.
 
-## Inventario incluido
+## Fotos y OCR
 
-`products.json` contiene 113 productos: los cinco ejemplos SAKS y 108 registros importados del comparativo de inventarios. Los 108 registros conservan su SKU, nombre/descripcion, categoría, precio, proveedor y stock. El Excel no contiene EAN para ellos, así que se pueden buscar por SKU y completar su EAN desde la ficha. No se inventan códigos.
+Al subir una foto de caja, etiqueta o manual, Tesseract.js en el navegador intenta reconocer SKU, nombre de producto y datos técnicos. Solo procesa líneas con confianza alta y campos que reconoce por etiquetas o formatos conocidos. Si no puede leer un dato con certeza, lo deja vacío; no copia el texto completo de la imagen a la descripción. Los beneficios y el modo de uso se extraen únicamente cuando aparecen identificados en la foto. La foto se usa también como imagen del producto.
 
-`tools/build-catalog.cjs` regenera `products.json` y `assets/saks-logo.jpg` a partir de `SourceProducts.gs` y `Logo.gs`.
-
-## Funciones
-
-- Búsqueda por EAN, SKU o nombre y escaneo de EAN con la cámara cuando el navegador lo admite.
-- Alta y edición de productos, foto, stock y datos técnicos.
-- Fichas PDF individuales y ZIP con todas las fichas.
-- Exportación CSV compatible con Excel y respaldo/restauración JSON.
-- Interfaz responsive, logo SAKS y acceso instalable como PWA.
-
-Las librerías PDF/ZIP se descargan de cdnjs; la búsqueda y edición del inventario funcionan con los archivos del sitio y el almacenamiento del navegador.
-
-## Importante sobre datos y privacidad
-
-GitHub Pages sirve este catálogo públicamente. Cualquier persona puede leer los productos, proveedores y stock que están en `products.json`. Las nuevas altas, cambios y fotos se guardan solo en el almacenamiento del navegador del dispositivo actual; no se suben al repositorio ni se sincronizan con el celular o la computadora. Usa **Respaldar inventario** para descargar un JSON y **Importar respaldo** para moverlo manualmente a otro dispositivo. Publicar de forma privada con Pages requiere GitHub Enterprise Cloud; la visibilidad privada de un repositorio personal Free despublica Pages.
-
-## Actualizar los productos del sitio
-
-Para que una edición aparezca en todos los dispositivos, actualiza `SourceProducts.gs`, ejecuta `node tools/build-catalog.cjs` y publica los cambios de `products.json` y, si hace falta, del logo. Las ediciones hechas desde la app son locales hasta que se exporten e incorporen al repositorio.
-
-Los campos técnicos, beneficios, colores, tamaños, imágenes y modo de uso que no estaban en el Excel quedan vacíos para completar. La información comercial no se inventa.
-# SAKS HUB
-
-App estática para GitHub Pages. El catálogo inicial se carga desde `products.json`; los cambios se guardan localmente en cada navegador y dispositivo.
+El OCR descarga Tesseract.js y sus datos de idioma al usarlo; requiere internet. PDF y ZIP también usan librerías externas.
 
 ## Fichas
 
-- La ficha PDF usa media hoja carta vertical: 13.97 × 21.59 cm (5.5 × 8.5 pulgadas).
-- Al agregar un producto, sube una foto legible de la etiqueta, caja o manual. OCR en el navegador intenta extraer EAN, nombre/modelo, marca, precio, potencia, voltaje, capacidad y otros textos.
-- La foto se conserva como imagen del producto. Revisa los datos detectados, ya que una foto borrosa puede producir errores.
-- La lectura OCR requiere conexión a internet la primera vez para cargar Tesseract.js y sus datos de idioma.
+La ficha PDF tiene media hoja carta vertical: 13,97 × 21,59 cm (5,5 × 8,5 pulgadas). La app permite descargar fichas PDF, un ZIP, exportar CSV para Excel y respaldar/restaurar el inventario en JSON.
 
-Los beneficios y el modo de uso solo se completan automáticamente si aparecen escritos en la imagen. No se inventa información que no esté visible.
+## Privacidad y sincronización
+
+GitHub Pages es público: el catálogo inicial, incluido el stock y los proveedores publicados, puede ser visto por cualquiera. Las nuevas altas, cambios y fotos se guardan solo en el navegador y dispositivo donde se hicieron. Para mover datos entre dispositivos, usa **Respaldar inventario** e **Importar respaldo**.
